@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>{{ product.name }}</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+</head>
+<body>
+
+    <div class="product-detail">
+
+        <img 
+            src="{{ url_for('static', filename='images/' + product.image) }}" 
+            alt="{{ product.name }}"
+        >
+
+        <div class="product-info">
+
+            <h1>{{ product.name }}</h1>
+
+            <p class="price">{{ product.price }}</p>
+
+            <p class="description">
+                {{ product.description }}
+            </p>
+
+            <button>
+                Order Now
+            </button>
+
+        </div>
+
+    </div>
+
+</body>
+</html>

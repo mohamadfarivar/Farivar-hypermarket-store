@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Local Food Store</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+    <nav class="navbar">
+
+    <div class="logo">
+
+        <img 
+            src="{{ url_for('static', filename='images/logo1.png') }}" 
+            alt="Logo"
+        >
+
+    </div>
+
+    <div class="menu-toggle" id="mobile-menu">
+
+        ☰
+
+    </div>
+
+    <ul class="nav-links">
+
+        <li><a href="/">Home</a></li>
+
+        <li><a href="#">Products</a></li>
+
+        <li><a href="#">Categories</a></li>
+
+        <li><a href="#">Contact</a></li>
+
+    </ul>
+
+    </nav>
+
+    <section class="hero">
+
+        <h1>Fresh Groceries Delivered Fast</h1>
+
+        <p>
+            Simple online grocery shopping for local customers.
+        </p>
+
+        <button>
+            Shop Now
+        </button>
+
+    <section class="products">
+
+    <h2>Popular Products</h2>
+
+    <div class="product-grid">
+
+        {% for product in products %}
+
+        <div class="product-card">
+
+            <img 
+                src="{{ url_for('static', filename='images/' + product.image) }}" 
+                alt="{{ product.name }}"
+            >
+
+            <h3>{{ product.name }}</h3>
+
+            <p class="price">{{ product.price }}</p>
+
+            <a href="/product/{{ product.id }}">
+
+                <button>
+                    View Product
+                </button>
+
+            </a>
+
+        </div>
+
+        {% endfor %}
+
+    </div>
+
+    </section>
+
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+
+</body>
+</html>
