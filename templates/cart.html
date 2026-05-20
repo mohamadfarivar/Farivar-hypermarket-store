@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Shopping Cart</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+</head>
+<body>
+
+    <div class="cart-container">
+
+        <h1>Your Cart</h1>
+
+        {% if products %}
+
+            <div class="cart-products">
+
+                {% for product in products %}
+
+                <div class="cart-product">
+
+                    <img
+                        src="{{ url_for('static', filename='images/' + product['image']) }}"
+                    >
+
+                    <div>
+
+                        <h3>{{ product["name"] }}</h3>
+
+                        <p>
+                            Price: {{ product["price"] }}
+                        </p>
+
+                        <p>
+                            Quantity: {{ product["quantity"] }}
+                        </p>
+
+                        <p>
+                            Total: ${{ product["total"] }}
+                        </p>
+
+                    </div>
+
+                    <a href="/remove-from-cart/{{ product['id'] }}">
+
+                        <button class="delete-btn">
+                            Remove
+                        </button>
+
+                    </a>
+
+                </div>
+
+                {% endfor %}
+
+            </div>
+
+        {% else %}
+
+            <p>
+                Your cart is empty.
+            </p>
+
+        {% endif %}
+
+
+        <div class="cart-total">
+
+            <h2>
+                Total Price: ${{ total_price }}
+            </h2>
+
+        </div>
+
+    </div>
+
+</body>
+</html>

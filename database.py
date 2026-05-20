@@ -16,7 +16,24 @@ CREATE TABLE IF NOT EXISTS products (
 
     image TEXT NOT NULL,
 
-    description TEXT NOT NULL
+    description TEXT NOT NULL,
+
+    category_id INTEGER,
+
+    FOREIGN KEY (category_id)
+    REFERENCES categories(id)
+
+)
+
+""")
+
+cursor.execute("""
+
+CREATE TABLE IF NOT EXISTS categories (
+
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+    name TEXT NOT NULL
 
 )
 

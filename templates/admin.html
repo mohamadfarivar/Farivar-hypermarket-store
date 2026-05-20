@@ -13,6 +13,18 @@
 </head>
 <body>
 
+    <div class="logout-container">
+
+        <a href="/logout">
+
+            <button class="logout-btn">
+                Logout
+            </button>
+
+        </a>
+
+    </div>
+
     <div class="admin-container">
 
         <h1>Add New Product</h1>
@@ -81,11 +93,19 @@
 
                 <div class="admin-buttons">
 
+                    <a href="/edit-product/{{ product['id'] }}">
+
+                        <button class="edit-btn">
+                            Edit
+                        </button>
+
+                    </a>
+
                     <a href="/delete-product/{{ product['id'] }}">
 
-                    <button class="delete-btn">
-                        Delete
-                    </button>
+                        <button class="delete-btn">
+                            Delete
+                        </button>
 
                     </a>
 

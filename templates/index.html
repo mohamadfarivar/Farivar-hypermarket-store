@@ -11,32 +11,34 @@
 
     <nav class="navbar">
 
-    <div class="logo">
+        <a href="/cart">خرید🛒</a>
 
-        <img 
-            src="{{ url_for('static', filename='images/logo1.png') }}" 
-            alt="Logo"
-        >
+        <div class="logo">
 
-    </div>
+            <img 
+                src="{{ url_for('static', filename='images/logo1.png') }}" 
+                alt="Logo"
+            >
 
-    <div class="menu-toggle" id="mobile-menu">
+        </div>
 
-        ☰
+        <div class="menu-toggle" id="mobile-menu">
 
-    </div>
+            ☰
 
-    <ul class="nav-links">
+        </div>
 
-        <li><a href="/">Home</a></li>
+        <ul class="nav-links">
 
-        <li><a href="#">Products</a></li>
+            <li><a href="/">Home</a></li>
 
-        <li><a href="#">Categories</a></li>
+            <li><a href="#">Products</a></li>
 
-        <li><a href="#">Contact</a></li>
+            <li><a href="#">Categories</a></li>
 
-    </ul>
+            <li><a href="#">Contact</a></li>
+
+        </ul>
 
     </nav>
 
@@ -52,9 +54,58 @@
             Shop Now
         </button>
 
+        <section class="search-section">
+
+            <form method="GET" action="/">
+
+                <input
+                    type="text"
+                    name="search"
+                    placeholder="Search products..."
+                    value="{{ request.args.get('search', '') }}"
+                >
+
+                <button type="submit">
+                    Search
+                </button>
+
+            </form>
+
+        </section>
+
+    <div class="categories">
+
+        <a href="/">
+            All
+        </a>
+
+        {% for category in categories %}
+
+            <a href="/?category={{ category['id'] }}">
+
+                {{ category["name"] }}
+
+            </a>
+
+        {% endfor %}
+
+    </div>
+
     <section class="products">
 
     <h2>Popular Products</h2>
+
+
+    {% if not products %}
+
+        <p class="no-products">
+
+            ! محصولی یافت نشد !
+
+        </p>
+
+    {% endif %}
+
 
     <div class="product-grid">
 
@@ -75,6 +126,14 @@
 
                 <button>
                     View Product
+                </button>
+
+            </a>
+
+            <a href="/add-to-cart/{{ product.id }}">
+
+                <button>
+                    Add To Cart
                 </button>
 
             </a>

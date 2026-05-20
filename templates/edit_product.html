@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Edit Product</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+</head>
+<body>
+
+    <div class="admin-container">
+
+        <h1>Edit Product</h1>
+
+        <form method="POST" enctype="multipart/form-data">
+
+            <input
+                type="text"
+                name="name"
+                value="{{ product['name'] }}"
+                required
+            >
+
+            <input
+                type="text"
+                name="price"
+                value="{{ product['price'] }}"
+                required
+            >
+
+            <textarea
+                name="description"
+                required
+            >{{ product['description'] }}</textarea>
+
+            <p>
+                Current Image:
+            </p>
+
+            <img
+                src="{{ url_for('static', filename='images/' + product['image']) }}"
+                width="150"
+            >
+
+            <input
+                type="file"
+                name="image"
+            >
+
+            <button type="submit">
+                Save Changes
+            </button>
+
+        </form>
+
+    </div>
+
+</body>
+</html>
