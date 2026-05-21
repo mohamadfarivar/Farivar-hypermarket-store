@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+    content="width=device-width, initial-scale=1.0">
+
+    <title>Admin Orders</title>
+
+    <link rel="stylesheet"
+    href="{{ url_for('static', filename='css/style.css') }}">
+
+</head>
+<body>
+
+    <div class="orders-container">
+
+        <h1>Orders Panel</h1>
+
+        {% for data in orders_data %}
+
+            {% set order = data["order"] %}
+
+            {% set items = data["items"] %}
+
+            <div class="order-card">
+
+                <h2>
+                    Order #{{ order["id"] }}
+                </h2>
+
+                <p>
+                    Customer:
+                    {{ order["customer_name"] }}
+                </p>
+
+                <p>
+                    Phone:
+                    {{ order["phone"] }}
+                </p>
+
+                <p>
+                    Address:
+                    {{ order["address"] }}
+                </p>
+
+                <p>
+                    Status:
+                    {{ order["status"] }}
+                </p>
+
+                <p>
+                    Total:
+                    ${{ order["total_price"] }}
+                </p>
+
+                <h3>
+                    Products
+                </h3>
+
+                {% for item in items %}
+
+                    <div class="order-item">
+
+                        <img
+                        src="{{ url_for('static', filename='images/' + item['image']) }}">
+
+                        <div>
+
+                            <p>
+                                {{ item["name"] }}
+                            </p>
+
+                            <p>
+                                Quantity:
+                                {{ item["quantity"] }}
+                            </p>
+
+                        </div>
+
+                    </div>
+
+                {% endfor %}
+
+                <div class="status-buttons">
+
+                    <a href="/update-order-status/{{ order['id'] }}/Preparing">
+
+                        <button>
+                            Preparing
+                        </button>
+
+                    </a>
+
+                    <a href="/update-order-status/{{ order['id'] }}/Delivered">
+
+                        <button>
+                            Delivered
+                        </button>
+
+                    </a>
+
+                </div>
+
+            </div>
+
+        {% endfor %}
+
+    </div>
+
+</body>
+</html>

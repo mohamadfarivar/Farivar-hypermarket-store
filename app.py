@@ -101,6 +101,7 @@ def admin():
     if "admin" not in session:
 
         return redirect("/login")
+    
 
     if request.method == "POST":
 
@@ -109,6 +110,8 @@ def admin():
         price = request.form["price"]
 
         description = request.form["description"]
+
+        stock = request.form["stock"]
 
         image = request.files["image"]
 
@@ -126,12 +129,13 @@ def admin():
             name,
             price,
             image,
-            description
+            description,
+            stock
         )
 
-        VALUES (?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?)
 
-        """, (name, price, filename, description))
+        """, (name, price, filename, description, stock))
 
         connection.commit()
 
@@ -299,6 +303,25 @@ def add_to_cart(product_id):
 
     cart = session["cart"]
 
+    connection = get_db_connection()
+
+    product = connection.execute(
+        "SELECT * FROM products WHERE id = ?",
+        (product_id,)
+    ).fetchone()
+
+    if not product:
+
+        connection.close()
+
+        return redirect("/")
+
+    if product["stock"] <= 0:
+
+        connection.close()
+
+        return redirect("/")
+
     product_id = str(product_id)
 
     if product_id in cart:
@@ -383,6 +406,208 @@ def remove_from_cart(product_id):
     session["cart"] = cart
 
     return redirect("/cart")
+
+
+
+
+@app.route("/checkout", methods=["GET", "POST"])
+def checkout():
+
+    cart = session.get("cart", {})
+
+    if not cart:
+
+        return redirect("/cart")
+
+    if request.method == "POST":
+
+        customer_name = request.form["customer_name"]
+
+        phone = request.form["phone"]
+
+        address = request.form["address"]
+
+        connection = get_db_connection()
+
+        total_price = 0
+
+        products_data = []
+
+        for product_id, quantity in cart.items():
+
+            product = connection.execute(
+                "SELECT * FROM products WHERE id = ?",
+                (product_id,)
+            ).fetchone()
+
+            if product:
+
+                price = int(
+                    product["price"].replace("$", "")
+                )
+
+                total = price * quantity
+
+                total_price += total
+
+                products_data.append({
+                    "product_id": product_id,
+                    "quantity": quantity
+                })
+
+        cursor = connection.cursor()
+
+        cursor.execute("""
+
+        INSERT INTO orders (
+            customer_name,
+            phone,
+            address,
+            total_price
+        )
+
+        VALUES (?, ?, ?, ?)
+
+        """, (
+            customer_name,
+            phone,
+            address,
+            total_price
+        ))
+
+        order_id = cursor.lastrowid
+
+        for item in products_data:
+
+            cursor.execute("""
+
+            INSERT INTO order_items (
+                order_id,
+                product_id,
+                quantity
+            )
+
+            VALUES (?, ?, ?)
+
+            """, (
+                order_id,
+                item["product_id"],
+                item["quantity"]
+            ))
+
+
+            cursor.execute("""
+
+        UPDATE products
+
+        SET stock = stock - ?
+
+        WHERE id = ?
+
+        """, (
+            item["quantity"],
+            item["product_id"]
+        ))
+
+        connection.commit()
+
+        connection.close()
+
+        session["cart"] = {}
+
+        return redirect("/success")
+
+    return render_template("checkout.html")
+
+
+
+
+@app.route("/success")
+def success():
+
+    return render_template("success.html")
+
+
+
+@app.route("/admin/orders")
+def admin_orders():
+
+    if "admin" not in session:
+
+        return redirect("/login")
+
+    connection = get_db_connection()
+
+    orders = connection.execute("""
+
+    SELECT * FROM orders
+
+    ORDER BY created_at DESC
+
+    """).fetchall()
+
+    orders_data = []
+
+    for order in orders:
+
+        items = connection.execute("""
+
+        SELECT
+            products.name,
+            products.image,
+            order_items.quantity
+
+        FROM order_items
+
+        JOIN products
+        ON order_items.product_id = products.id
+
+        WHERE order_items.order_id = ?
+
+        """, (order["id"],)).fetchall()
+
+        orders_data.append({
+
+            "order": order,
+
+            "items": items
+
+        })
+
+    connection.close()
+
+    return render_template(
+        "admin_orders.html",
+        orders_data=orders_data
+    )
+
+
+
+@app.route("/update-order-status/<int:order_id>/<status>")
+def update_order_status(order_id, status):
+
+    if "admin" not in session:
+
+        return redirect("/login")
+
+    connection = get_db_connection()
+
+    connection.execute("""
+
+    UPDATE orders
+
+    SET status = ?
+
+    WHERE id = ?
+
+    """, (status, order_id))
+
+    connection.commit()
+
+    connection.close()
+
+    return redirect("/admin/orders")
+
 
 
 if __name__ == "__main__":

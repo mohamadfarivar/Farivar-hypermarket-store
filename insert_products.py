@@ -33,7 +33,8 @@ products = [
         "$12",
         "rice-khoshbakht-india.jpg",
         "High quality Iranian rice for daily cooking.",
-        1
+        1,
+        10
     ),
 
     (
@@ -41,7 +42,8 @@ products = [
         "$8",
         "oil-ladan-2litr.jpg",
         "Pure cooking oil for healthy meals.",
-        2
+        2,
+        10
     ),
 
     (
@@ -49,7 +51,8 @@ products = [
         "$3",
         "milk-kale-porcharb-1litr.jpg",
         "Fresh local milk delivered daily.",
-        3
+        3,
+        10
     )
 
 ]
@@ -61,10 +64,11 @@ INSERT INTO products (
     price,
     image,
     description,
-    category_id
+    category_id,
+    stock
 )
 
-VALUES (?, ?, ?, ?, ?)
+VALUES (?, ?, ?, ?, ?, ?)
 
 """, products)
 

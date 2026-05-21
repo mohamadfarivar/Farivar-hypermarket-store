@@ -130,13 +130,44 @@
 
             </a>
 
-            <a href="/add-to-cart/{{ product.id }}">
+            <p class="stock-text">
 
-                <button>
-                    Add To Cart
+                Stock:
+                {{ product["stock"] }}
+
+            </p>
+
+            {% if product["stock"] > 0 %}
+
+                <a href="/add-to-cart/{{ product.id }}">
+
+                    <button>
+                        Add To Cart
+                    </button>
+
+                </a>
+
+            {% else %}
+
+                <button disabled>
+
+                    Out Of Stock
+
                 </button>
 
-            </a>
+            {% endif %}
+
+
+            {% if product["stock"] <= 0 %}
+
+                <p class="out-stock">
+
+                    Out Of Stock
+
+                </p>
+
+            {% endif %}
+
 
         </div>
 

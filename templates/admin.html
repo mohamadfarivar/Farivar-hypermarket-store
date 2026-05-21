@@ -25,6 +25,18 @@
 
     </div>
 
+
+    <a href="/admin/orders">
+
+        <button class="orders-btn">
+
+            Orders Panel
+
+        </button>
+
+    </a>
+
+
     <div class="admin-container">
 
         <h1>Add New Product</h1>
@@ -56,6 +68,13 @@
                 placeholder="Product Description"
                 required
             ></textarea>
+
+            <input
+                type="number"
+                name="stock"
+                placeholder="Stock Quantity"
+                required
+            >
 
             <button type="submit">
                 Add Product
@@ -90,6 +109,15 @@
                     <p>{{ product["price"] }}</p>
 
                 </div>
+
+
+                <p>
+
+                    Stock:
+                    {{ product["stock"] }}
+
+                </p>
+
 
                 <div class="admin-buttons">
 
