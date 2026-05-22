@@ -48,6 +48,8 @@ CREATE TABLE IF NOT EXISTS orders (
 
     id INTEGER PRIMARY KEY AUTOINCREMENT,
 
+    user_id INTEGER,
+
     customer_name TEXT NOT NULL,
 
     phone TEXT NOT NULL,
@@ -58,7 +60,10 @@ CREATE TABLE IF NOT EXISTS orders (
 
     status TEXT DEFAULT 'Pending',
 
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY(user_id)
+    REFERENCES users(id)
 
 )
 
@@ -79,6 +84,52 @@ CREATE TABLE IF NOT EXISTS order_items (
 
     FOREIGN KEY(order_id)
     REFERENCES orders(id),
+
+    FOREIGN KEY(product_id)
+    REFERENCES products(id)
+
+)
+
+""")
+
+
+
+cursor.execute("""
+
+CREATE TABLE IF NOT EXISTS users (
+
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+    username TEXT NOT NULL,
+
+    email TEXT UNIQUE NOT NULL,
+
+    password TEXT NOT NULL
+
+)
+
+""")
+
+
+
+cursor.execute("""
+
+CREATE TABLE IF NOT EXISTS reviews (
+
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+    user_id INTEGER NOT NULL,
+
+    product_id INTEGER NOT NULL,
+
+    rating INTEGER NOT NULL,
+
+    comment TEXT NOT NULL,
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY(user_id)
+    REFERENCES users(id),
 
     FOREIGN KEY(product_id)
     REFERENCES products(id)

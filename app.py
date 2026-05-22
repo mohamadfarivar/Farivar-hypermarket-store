@@ -1,3 +1,8 @@
+from werkzeug.security import (
+    generate_password_hash,
+    check_password_hash
+)
+
 from flask import (
     Flask,
     render_template,
@@ -87,11 +92,39 @@ def product_detail(product_id):
         (product_id,)
     ).fetchone()
 
+    reviews = connection.execute("""
+
+    SELECT
+        reviews.*,
+        users.username
+
+    FROM reviews
+
+    JOIN users
+    ON reviews.user_id = users.id
+
+    WHERE product_id = ?
+
+    ORDER BY created_at DESC
+
+    """, (product_id,)).fetchall()
+
+    average_rating = connection.execute("""
+
+    SELECT AVG(rating)
+    FROM reviews
+
+    WHERE product_id = ?
+
+    """, (product_id,)).fetchone()[0]
+
     connection.close()
 
     return render_template(
-        "product.html",
-        product=product
+        "product_detail.html",
+        product=product,
+        reviews=reviews,
+        average_rating=average_rating
     )
 
 
@@ -418,6 +451,8 @@ def checkout():
     if not cart:
 
         return redirect("/cart")
+    
+    user_id = session.get("user_id")
 
     if request.method == "POST":
 
@@ -460,15 +495,17 @@ def checkout():
         cursor.execute("""
 
         INSERT INTO orders (
+            user_id,
             customer_name,
             phone,
             address,
             total_price
         )
 
-        VALUES (?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?)
 
         """, (
+            user_id,
             customer_name,
             phone,
             address,
@@ -610,5 +647,211 @@ def update_order_status(order_id, status):
 
 
 
+@app.route("/register", methods=["GET", "POST"])
+def register():
+
+    if request.method == "POST":
+
+        username = request.form["username"]
+
+        email = request.form["email"]
+
+        password = request.form["password"]
+
+        hashed_password = generate_password_hash(password)
+
+        connection = get_db_connection()
+
+        existing_user = connection.execute("""
+
+        SELECT * FROM users
+
+        WHERE email = ?
+
+        """, (email,)).fetchone()
+
+        if existing_user:
+
+            connection.close()
+
+            return "Email already exists"
+
+        connection.execute("""
+
+        INSERT INTO users (
+            username,
+            email,
+            password
+        )
+
+        VALUES (?, ?, ?)
+
+        """, (
+            username,
+            email,
+            hashed_password
+        ))
+
+        connection.commit()
+
+        connection.close()
+
+        return redirect("/user-login")
+
+    return render_template("register.html")
+
+
+
+@app.route("/user-login", methods=["GET", "POST"])
+def user_login():
+
+    if request.method == "POST":
+
+        email = request.form["email"]
+
+        password = request.form["password"]
+
+        connection = get_db_connection()
+
+        user = connection.execute("""
+
+        SELECT * FROM users
+
+        WHERE email = ?
+
+        """, (email,)).fetchone()
+
+        connection.close()
+
+        if user and check_password_hash(
+            user["password"],
+            password
+        ):
+
+            session["user_id"] = user["id"]
+
+            session["username"] = user["username"]
+
+            return redirect("/")
+
+        return "Invalid email or password"
+
+    return render_template("user_login.html")
+
+
+
+@app.route("/user-logout")
+def user_logout():
+
+    session.pop("user_id", None)
+
+    session.pop("username", None)
+
+    return redirect("/")
+
+
+
+@app.route("/my-orders")
+def my_orders():
+
+    if "user_id" not in session:
+
+        return redirect("/user-login")
+
+    user_id = session["user_id"]
+
+    connection = get_db_connection()
+
+    orders = connection.execute("""
+
+    SELECT * FROM orders
+
+    WHERE user_id = ?
+
+    ORDER BY created_at DESC
+
+    """, (user_id,)).fetchall()
+
+    orders_data = []
+
+    for order in orders:
+
+        items = connection.execute("""
+
+        SELECT
+            products.name,
+            products.image,
+            products.price,
+            order_items.quantity
+
+        FROM order_items
+
+        JOIN products
+        ON order_items.product_id = products.id
+
+        WHERE order_items.order_id = ?
+
+        """, (order["id"],)).fetchall()
+
+        orders_data.append({
+
+            "order": order,
+
+            "items": items
+
+        })
+
+    connection.close()
+
+    return render_template(
+        "my_orders.html",
+        orders_data=orders_data
+    )
+
+
+
+@app.route("/add-review/<int:product_id>", methods=["POST"])
+def add_review(product_id):
+
+    if "user_id" not in session:
+
+        return redirect("/user-login")
+
+    rating = request.form["rating"]
+
+    comment = request.form["comment"]
+
+    user_id = session["user_id"]
+
+    connection = get_db_connection()
+
+    connection.execute("""
+
+    INSERT INTO reviews (
+        user_id,
+        product_id,
+        rating,
+        comment
+    )
+
+    VALUES (?, ?, ?, ?)
+
+    """, (
+        user_id,
+        product_id,
+        rating,
+        comment
+    ))
+
+    connection.commit()
+
+    connection.close()
+
+    return redirect(f"/product/{product_id}")
+
+
+
 if __name__ == "__main__":
     app.run(debug=True)
+
+
