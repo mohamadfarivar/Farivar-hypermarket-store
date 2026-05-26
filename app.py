@@ -22,6 +22,11 @@ import os
 
 import sqlite3
 
+import psycopg2
+
+from psycopg2.extras import RealDictCursor
+
+
 app = Flask(__name__)
 app.secret_key = "super-secret-key"
 
@@ -29,11 +34,30 @@ UPLOAD_FOLDER = "static/images"
 
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
-def get_db_connection():
+def get_sqlite_connection():
 
     connection = sqlite3.connect("database.db")
 
     connection.row_factory = sqlite3.Row
+
+    return connection
+
+
+def get_db_connection():
+
+    connection = psycopg2.connect(
+
+        host="localhost",
+
+        database="farivar_store",
+
+        user="postgres",
+
+        password="Farivar1123@#",
+
+        cursor_factory=RealDictCursor
+
+    )
 
     return connection
 
@@ -47,9 +71,13 @@ def home():
 
     connection = get_db_connection()
 
-    categories = connection.execute(
+    cursor = connection.cursor()
+
+    cursor.execute(
         "SELECT * FROM categories"
-    ).fetchall()
+    )
+
+    categories = cursor.fetchall()
 
     query = "SELECT * FROM products WHERE 1=1"
 
@@ -57,22 +85,24 @@ def home():
 
     if search:
 
-        query += " AND name LIKE ?"
+        query += " AND name LIKE %s"
 
         params.append(f"%{search}%")
 
     if category:
 
-        query += " AND category_id = ?"
+        query += " AND category_id = %s"
 
         params.append(category)
 
-    products = connection.execute(
+    cursor.execute(
         query,
         params
-    ).fetchall()
+    )
 
-    connection.close()
+    products = cursor.fetchall()
+
+    cursor.close()
 
     return render_template(
         "index.html",
@@ -87,12 +117,16 @@ def product_detail(product_id):
 
     connection = get_db_connection()
 
-    product = connection.execute(
-        "SELECT * FROM products WHERE id = ?",
-        (product_id,)
-    ).fetchone()
+    cursor = connection.cursor()
 
-    reviews = connection.execute("""
+    cursor.execute(
+        "SELECT * FROM products WHERE id = %s",
+        (product_id,)
+    )
+
+    product = cursor.fetchone()
+
+    cursor.execute("""
 
     SELECT
         reviews.*,
@@ -107,18 +141,22 @@ def product_detail(product_id):
 
     ORDER BY created_at DESC
 
-    """, (product_id,)).fetchall()
+    """)
 
-    average_rating = connection.execute("""
+    reviews = cursor.fetchone()
+
+    cursor.execute("""
 
     SELECT AVG(rating)
     FROM reviews
 
     WHERE product_id = ?
 
-    """, (product_id,)).fetchone()[0]
+    """)
 
-    connection.close()
+    average_rating = cursor.fetchone()
+
+    cursor.close()
 
     return render_template(
         "product_detail.html",
@@ -156,7 +194,9 @@ def admin():
 
         connection = get_db_connection()
 
-        connection.execute("""
+        cursor = connection.cursor()
+
+        cursor.execute("""
 
         INSERT INTO products (
             name,
@@ -166,23 +206,27 @@ def admin():
             stock
         )
 
-        VALUES (?, ?, ?, ?, ?)
+        VALUES (%s, %s, %s, %s, %s)
 
         """, (name, price, filename, description, stock))
 
         connection.commit()
 
-        connection.close()
+        cursor.close()
 
         return redirect("/admin")
 
     connection = get_db_connection()
 
-    products = connection.execute(
-        "SELECT * FROM products"
-    ).fetchall()
+    cursor = connection.cursor()
 
-    connection.close()
+    cursor.execute(
+        "SELECT * FROM products"
+    )
+
+    products = cursor.fetchall()
+
+    cursor.close()
 
     return render_template(
         "admin.html",
@@ -199,8 +243,10 @@ def delete_product(product_id):
 
     connection = get_db_connection()
 
-    connection.execute(
-        "DELETE FROM products WHERE id = ?",
+    cursor = connection.cursor()
+
+    cursor.execute(
+        "DELETE FROM products WHERE id = %s",
         (product_id,)
     )
 
@@ -220,10 +266,12 @@ def edit_product(product_id):
 
     connection = get_db_connection()
 
-    product = connection.execute(
-        "SELECT * FROM products WHERE id = ?",
+    cursor.execute(
+        "SELECT * FROM products WHERE id = %s",
         (product_id,)
-    ).fetchone()
+    )
+
+    product = cursor.fetchone()
 
     if request.method == "POST":
 
@@ -248,17 +296,17 @@ def edit_product(product_id):
                 )
             )
 
-        connection.execute("""
+        cursor.execute("""
 
         UPDATE products
 
         SET
-            name = ?,
-            price = ?,
-            image = ?,
-            description = ?
+            name = %s,
+            price = %s,
+            image = %s,
+            description = %s
 
-        WHERE id = ?
+        WHERE id = %s
 
         """, (
             name,
@@ -270,7 +318,7 @@ def edit_product(product_id):
 
         connection.commit()
 
-        connection.close()
+        cursor.close()
 
         return redirect("/admin")
 
@@ -338,18 +386,26 @@ def add_to_cart(product_id):
 
     connection = get_db_connection()
 
-    product = connection.execute(
-        "SELECT * FROM products WHERE id = ?",
+    cursor = connection.cursor()
+
+    cursor.execute(
+        "SELECT * FROM products WHERE id = %s",
         (product_id,)
-    ).fetchone()
+    )
+
+    product = cursor.fetchone()
 
     if not product:
+
+        cursor.close()
 
         connection.close()
 
         return redirect("/")
 
     if product["stock"] <= 0:
+
+        cursor.close()
 
         connection.close()
 
@@ -367,6 +423,10 @@ def add_to_cart(product_id):
 
     session["cart"] = cart
 
+    cursor.close()
+
+    connection.close()
+
     return redirect("/cart")
 
 
@@ -381,16 +441,20 @@ def cart():
 
     connection = get_db_connection()
 
+    cursor = connection.cursor()
+
     for product_id, quantity in cart.items():
 
-        product = connection.execute(
-            "SELECT * FROM products WHERE id = ?",
+        cursor.execute(
+            "SELECT * FROM products WHERE id = %s",
             (product_id,)
-        ).fetchone()
+        )
+
+        product = cursor.fetchone()
 
         if product:
 
-            price = int(product["price"].replace("$", ""))
+            price = product["price"]
 
             total = price * quantity
 
@@ -412,7 +476,7 @@ def cart():
 
             })
 
-    connection.close()
+    cursor.close()
 
     return render_template(
         "cart.html",
@@ -451,7 +515,7 @@ def checkout():
     if not cart:
 
         return redirect("/cart")
-    
+
     user_id = session.get("user_id")
 
     if request.method == "POST":
@@ -464,33 +528,38 @@ def checkout():
 
         connection = get_db_connection()
 
+        cursor = connection.cursor()
+
         total_price = 0
 
         products_data = []
 
         for product_id, quantity in cart.items():
 
-            product = connection.execute(
-                "SELECT * FROM products WHERE id = ?",
+            cursor.execute(
+
+                "SELECT * FROM products WHERE id = %s",
+
                 (product_id,)
-            ).fetchone()
+            )
+
+            product = cursor.fetchone()
 
             if product:
 
-                price = int(
-                    product["price"].replace("$", "")
-                )
+                price = product["price"]
 
                 total = price * quantity
 
                 total_price += total
 
                 products_data.append({
-                    "product_id": product_id,
-                    "quantity": quantity
-                })
 
-        cursor = connection.cursor()
+                    "product_id": product_id,
+
+                    "quantity": quantity
+
+                })
 
         cursor.execute("""
 
@@ -502,7 +571,9 @@ def checkout():
             total_price
         )
 
-        VALUES (?, ?, ?, ?, ?)
+        VALUES (%s, %s, %s, %s, %s)
+
+        RETURNING id
 
         """, (
             user_id,
@@ -512,7 +583,7 @@ def checkout():
             total_price
         ))
 
-        order_id = cursor.lastrowid
+        order_id = cursor.fetchone()["id"]
 
         for item in products_data:
 
@@ -524,7 +595,7 @@ def checkout():
                 quantity
             )
 
-            VALUES (?, ?, ?)
+            VALUES (%s, %s, %s)
 
             """, (
                 order_id,
@@ -532,21 +603,22 @@ def checkout():
                 item["quantity"]
             ))
 
-
             cursor.execute("""
 
-        UPDATE products
+            UPDATE products
 
-        SET stock = stock - ?
+            SET stock = stock - %s
 
-        WHERE id = ?
+            WHERE id = %s
 
-        """, (
-            item["quantity"],
-            item["product_id"]
-        ))
+            """, (
+                item["quantity"],
+                item["product_id"]
+            ))
 
         connection.commit()
+
+        cursor.close()
 
         connection.close()
 
@@ -555,7 +627,6 @@ def checkout():
         return redirect("/success")
 
     return render_template("checkout.html")
-
 
 
 
@@ -646,7 +717,6 @@ def update_order_status(order_id, status):
     return redirect("/admin/orders")
 
 
-
 @app.route("/register", methods=["GET", "POST"])
 def register():
 
@@ -662,21 +732,27 @@ def register():
 
         connection = get_db_connection()
 
-        existing_user = connection.execute("""
+        cursor = connection.cursor()
+
+        cursor.execute("""
 
         SELECT * FROM users
 
-        WHERE email = ?
+        WHERE email = %s
 
-        """, (email,)).fetchone()
+        """, (email,))
+
+        existing_user = cursor.fetchone()
 
         if existing_user:
+
+            cursor.close()
 
             connection.close()
 
             return "Email already exists"
 
-        connection.execute("""
+        cursor.execute("""
 
         INSERT INTO users (
             username,
@@ -684,7 +760,7 @@ def register():
             password
         )
 
-        VALUES (?, ?, ?)
+        VALUES (%s, %s, %s)
 
         """, (
             username,
@@ -694,12 +770,13 @@ def register():
 
         connection.commit()
 
+        cursor.close()
+
         connection.close()
 
         return redirect("/user-login")
 
     return render_template("register.html")
-
 
 
 @app.route("/user-login", methods=["GET", "POST"])
@@ -713,15 +790,18 @@ def user_login():
 
         connection = get_db_connection()
 
-        user = connection.execute("""
+        cursor = connection.cursor()
+
+        cursor.execute("""
 
         SELECT * FROM users
 
-        WHERE email = ?
+        WHERE email = %s
 
-        """, (email,)).fetchone()
+        """, (email,))
 
-        connection.close()
+        user = cursor.fetchone()
+        cursor.close()
 
         if user and check_password_hash(
             user["password"],
@@ -823,7 +903,7 @@ def add_review(product_id):
 
     user_id = session["user_id"]
 
-    connection = get_db_connection()
+    connection = get_sqlite_connection()
 
     connection.execute("""
 
